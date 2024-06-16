@@ -20,7 +20,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%    MODEL FFNN   ##########################
 numOfFeature = 20;
-modelArray = [];
+
 for l = 1:L
     % Preparing inputs for NN
     % beta vector preparation(removing outliers and scaling)
@@ -88,7 +88,7 @@ for l = 1:L
     %% Training option:
     minibatch_size = 128;
     Training_set_ratio = 0.95;
-    numEpochs = 50;
+    numEpochs = 30;
     learnRate = 2e-3; % 1.2e-3
     %Dropperiod = [23, 29, 30, 39, 49];
     Dropperiod = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90];
@@ -287,7 +287,7 @@ for l = 1:L
     y_predictions = transformer.model(x_test, parameters);
     test_mse = mean(reshape((y_test - y_predictions(1:K,:,:,:)).^2,1,[]));
     fprintf("Test MSE: %f",test_mse)
-    modelArray = [modelArray parameters];
+    save("MR_sumSE_ANN_"+l+".mat","parameters");
 end
 %% Supporting Functions
 
