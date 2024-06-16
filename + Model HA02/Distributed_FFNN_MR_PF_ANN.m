@@ -47,7 +47,7 @@ for l = 1:L
     betas = 10*log10(betas); %db scale
 
     % betas = normalize(betas,"scale","iqr","center","median");
-    
+    betas = robustScaler(betas,0,1);
 
     DNNinput = betas;
     x_train = DNNinput(1:NoOfSetups - 100,:);
