@@ -1,10 +1,13 @@
-function mu = predictions_HA02(betas_DNN,Pmax,NoOfSetups,modelname)
+function mu = predictions_HA02(betas_DNN,Pmax,NoOfSetups,modelName)
    K = size(betas_DNN,1);
    L = size(betas_DNN,2);
    nbrOfSetups = size(betas_DNN,3);
    mu = zeros(K+1,nbrOfSetups);
    result = zeros(K+1,1,1,nbrOfSetups);
    for l = 1:L
+        if strcmpi(modelName,"MR_PF")
+            model = load(".\Model\HA02\MR_PF_ANN\MR_PF_ANN_"+l+".mat");
+        end
         betas = reshape(betas_DNN(:,l,:),K,[]).' * 1000;
 
         v = 0.6;
@@ -18,7 +21,7 @@ function mu = predictions_HA02(betas_DNN,Pmax,NoOfSetups,modelname)
         betas = betas.';
         betas = reshape(betas,K,1,1,[]);
 
-        result = transformer.model(betas,modelname);
+        result = transformer.model(betas,model.parameters);
 
         result = reshape(result,K,[]);
 

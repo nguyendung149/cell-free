@@ -120,9 +120,6 @@ SE_RZF_sumSE_CDNN3 = zeros(K,nbrOfSetups);
 SE_MR_PF_CDNN3 = zeros(K,nbrOfSetups);
 SE_RZF_PF_CDNN3 = zeros(K,nbrOfSetups);
 
-% HA02 allocation
-SE_MR_PF_ANN = zeros(K,nbrOfSetups);
-
 %%
 % Prepare array for pilot indices of K UEs for all setups
 pilotIndex = zeros(K,1);
@@ -546,7 +543,7 @@ for n = 1:nbrOfSetups
 end
 % PF HA02
 modelName = "MR_PF";
-muMR_ANN_PF = predictions_HA02(dataset_betas,Pmax,nbrOfSetups,modelName);
+muMR_ANN_PF = predictions_CDNN(dataset_betas,Pmax,nbrOfSetups,modelName);
 muMR_ANN_PF_scaling = muMR_ANN_PF(K+1,:,:);
 muMR_ANN_PF_scaling(muMR_ANN_PF_scaling > 1) = 1;
 muMR_ANN_PF_scaling = muMR_ANN_PF_scaling * sqrt(Pmax);
@@ -557,11 +554,11 @@ for n = 1:nbrOfSetups
         value = norm(tem(:,t),"fro");
         normMuMR_ANN_PFArray = [normMuMR_ANN_PFArray value];    
     end
-    muMR_ANN_PF(1:K,:,n) = muMR_ANN_PF(1:K,:,n) .* repmat(muMR_ANN_PF_scaling(:,:,n),K,1) ./ max(normMuMR_ANN_PFArray);
+    muMR_ANN_PF(1:K,:,n) = muMR_ANN_PF(1:K,:,n) .* repmat(muMR_ANN_PF_scaling(:,:,n),K,1) ./ max(normMuRZF_CDNN_PFArray);
 end
 
 for n = 1:nbrOfSetups
-    SE_MR_PF_ANN(:,n) = calculate_SINR_and_SE_DL(dataset_a_MR(:,:,n), dataset_B_MR(:,:,:,:,n), prelogFactor, muMR_ANN_PF(1:K,:,n), Pmax);
+    SE_RZF_PF_CDNN3(:,n) = calculate_SINR_and_SE_DL(dataset_a_RZF(:,:,n), dataset_B_RZF(:,:,:,:,n), prelogFactor, muRZF_CDNN_PF(1:K,:,n), Pmax);
 end
 
 
@@ -586,8 +583,6 @@ sorted_SE_MR_sumSE_CDNN3 = sorted_SE(SE_MR_sumSE_CDNN3);
 sorted_SE_RZF_sumSE_CDNN3 = sorted_SE(SE_RZF_sumSE_CDNN3);
 sorted_SE_MR_PF_CDNN3 = sorted_SE(SE_MR_PF_CDNN3);
 sorted_SE_RZF_PF_CDNN3 = sorted_SE(SE_RZF_PF_CDNN3);
-
-sorted_SE_MR_PF_ANN = sorted_SE(SE_MR_PF_ANN);
 
 
 % Calculations for sum-rate plots
@@ -638,8 +633,8 @@ sum_SE_RZF_PF_CDNN3 = sort(sum_SE_RZF_PF_CDNN3);
 % sum_SE_RZF_sumSE_ANN = sort(sum_SE_RZF_sumSE_ANN);
 % 
 % 
-sum_SE_MR_PF_ANN = sum(SE_MR_PF_ANN);
-sum_SE_MR_PF_ANN = sort(sum_SE_MR_PF_ANN);
+% sum_SE_MR_PF_ANN = sum(SE_MR_PF_ANN);
+% sum_SE_MR_PF_ANN = sort(sum_SE_MR_PF_ANN);
 % sum_SE_RZF_PF_ANN = sum(SE_RZF_PF_ANN);
 % sum_SE_RZF_PF_ANN = sort(sum_SE_RZF_PF_ANN);
 
@@ -674,11 +669,11 @@ plot(sorted_SE_MR_Equal,  Yvals, color="red",  linewidth=2)
 plot(sorted_SE_MR_Giovanni19, Yvals, '-.', color="green",  linewidth=2)
 plot(sorted_SE_MR_WMMSE_PF_ADMM, Yvals, color="blue", linewidth=2)
 plot(sorted_SE_MR_PF_DDNN, Yvals, color="cyan", linewidth=2) 
-plot(sorted_SE_MR_PF_ANN, Yvals, color="magenta",linewidth=2)
+%plot(sorted_SE_MR_PF_ANN, Yvals, color="magenta",linewidth=2)
 plot(sorted_SE_MR_PF_CDNN3,Yvals,color="yellow",LineWidth=2)
 
 legend('Equal power MR','[12] MR','SE MR WMMSE PF ADMM','SE MR PF DDNN',...
-    'SE MR PF ANN','SE MR PF CDNN3')
+    'SE MR PF CDNN3')
 xlim([0.0, 5])
 ylim([0, 1])
 title('Sorted Spectral Efficiency')
@@ -746,10 +741,10 @@ plot(sum_SE_MR_Equal,  Yvals_sum, color="red",  linewidth=2)
 plot(sum_SE_MR_Giovanni19, Yvals_sum, '-.', color="green",  linewidth=2)
 plot(sum_SE_MR_WMMSE_PF_ADMM, Yvals_sum, color="blue", linewidth=2)
 plot(sum_SE_MR_PF_DDNN, Yvals_sum, color="cyan", linewidth=2) 
-plot(sum_SE_MR_PF_ANN,Yvals_sum,color="magenta",linewidth=2)
+% plot(sum_SE_MR_PF_ANN,Yvals_sum,color="magenta",linewidth=2)
 plot(sum_SE_MR_PF_CDNN3, Yvals_sum, color="yellow", linewidth=2) 
 legend('Equal power MR','[12] MR','SE MR WMMSE PF ADMM','SE MR PF DDNN',...
-    'SE MR PF ANN','SE MR PF CDNN3')
+    'SE MR PF CDNN3')
 %xlim([0.0, 5])
 ylim([0, 1])
 title('Sum Spectral Efficiency')
