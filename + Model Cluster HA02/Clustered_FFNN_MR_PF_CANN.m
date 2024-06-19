@@ -1,6 +1,5 @@
 clear all,close all,clc;
 
-%% Load data
 % Loading input to the NN
 dataDNN = load('D:\DuAn\code\data_training.mat');
 mu_MR_PF_DNN = dataDNN.mu_MR_PF_DNN;
@@ -11,82 +10,94 @@ Pmax = 1000;
 K = size(betas_DNN,1);
 L = size(betas_DNN,2);
 NoOfSetups = size(betas_DNN,3);
-
 % Make sure the sum over the K UEs gives Pmax for each AP in each setup- (might not be necessary)
 for n = 1:NoOfSetups
     mu_MR_PF_DNN(:,:,n) = mu_MR_PF_DNN(:,:,n) .* sqrt(Pmax/(max(sum(mu_MR_PF_DNN(:,:,n).^2,1))));
-
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%    MODEL FFNN   ##########################
-numOfFeature = 20;
+cluster_size = 3;
+numOfFeature = cluster_size*K;
 
-for l = 1:L
-    %% Data generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%    MODEL FFNN   ##########################
+for l = 1:cluster_size:L
+
+    NoOfSetups = size(betas_DNN,3);
     % Preparing inputs for NN
-    % beta vector preparation(removing outliers and scaling)
-    betas = reshape(betas_DNN(:,l,:),K,[]).'; % or use a function of betas
-    betas = 10*log10(betas*1000); % dB scale
+    % beta vector preparation (removing outliers and scaling)
+    if l == 16
+        l = 14;
+    end
+    betas = zeros(NoOfSetups,cluster_size*K);
+    for c = 1:cluster_size
+        betas(:,(c-1)*K+1:c*K) = reshape(betas_DNN(:,l+c-1,:),K,[]).';
+    end
+    betas = 10*log10(betas*1000);
     big_values = [];
     for i = 1:NoOfSetups
-        if any(betas(i,:) > 34)
+        if any(betas(i,:) > 37)
             big_values = [big_values i];
         end
     end
-    
     betas(big_values,:) = [];
-    NoOfSetups = size(betas,1);
+    NoOfSetups =size(betas,1);
 
-
-    betas = 10.^(betas/10); %  # changing back to linear scale
-
-
-    % The betas are changed to mus with fractional power allocatrion (gives better scaling)
-    v = 0.6; % Fractional power allocation factor
-    betas = sqrt(Pmax) * ((betas.^v)./reshape(sum(betas.^v,2),NoOfSetups,1));
-    betas = 10*log10(betas); %db scale
-
-    % betas = normalize(betas,"scale","iqr","center","median");
     betas = robustScaler(betas,0,1);
-
     DNNinput = betas;
-    x_train = DNNinput(1:NoOfSetups - 100,:);
+    x_train = DNNinput(1:NoOfSetups-100,:);
 
-    % mu preparation
-    mu = reshape(abs(mu_MR_PF_DNN(:,l,:)),K,[]).';
-    mu(big_values,:) = [];
-    temp = sqrt(reshape(sum((mu(1:NoOfSetups - 100,:).').^2),NoOfSetups-100,1)/Pmax);
+    mu = zeros(NoOfSetups,cluster_size*K);
+    temp = zeros(NoOfSetups-100,cluster_size);
+    for c = 1:cluster_size
+        store = reshape(mu_MR_PF_DNN(:,l+c-1,:),K,[]).';
+        store(big_values,:) = [];
+        mu(:,(c-1)*K+1:c*K) = abs(store);
+        temp(:,c) = sqrt(reshape(sum((mu(1:NoOfSetups - 100,(c-1)*K+1:c*K).').^2),NoOfSetups-100,1)/Pmax);
+    end
     y_train = [mu(1:NoOfSetups-100,:) temp];
-    small_values = [];
-    small_val = 5 / sqrt(Pmax);
-    for i = 1:NoOfSetups-100
-        if y_train(i,K+1) < small_val
-            small_values = [small_values i ];
-        end
 
+    small_values = [];
+    small_val = 5/sqrt(Pmax);
+    for i = 1:(NoOfSetups-100)
+        counter = 0;
+        for j = 1:cluster_size
+            if y_train(i,cluster_size*K+j)<small_val
+                counter = counter + 1;
+            end
+        end
+        if counter == cluster_size
+            small_values = [small_values i];
+        end
     end
     y_train(small_values,:) = [];
     NoOfSetups = size(y_train,1);
-    y_train(y_train < 0.001) = 0.001;
-    y_train(:,1:K) = sqrt(K) * normalize(y_train(:,1:K).',"norm",2).';
+
+    % Normalization with sqrt(Pmax) must be done separately for each AP as follows
+    for c = 1:cluster_size
+        y_train(:,(c-1)*K+1:c*K) = sqrt(K) * normalize(y_train(:,(c-1)*K+1:c*K).',"norm",2).';
+    end
+
+
     x_train(small_values,:) = [];
-    
+
     % Validation data
-    % Cross varidation (train: 70%, test: 10%)
+    % Cross varidation 
     cv = cvpartition(size(x_train,1),'HoldOut',0.1);
     idx = cv.test;
     % Separate to training and test data
     dataTrain_X = x_train(~idx,:);
     dataValidation_X  = x_train(idx,:);
-
+    
     dataTrain_y = y_train(~idx,:);
     dataValidation_y = y_train(idx,:);
 
-    y_test = mu(NoOfSetups - 99 : NoOfSetups,:);
-    y_test = sqrt(K) * normalize(y_test(:,1:K).',"norm",2).';
-    x_test = DNNinput((NoOfSetups - 99):NoOfSetups,:);
+    x_test = DNNinput(NoOfSetups-99:NoOfSetups,:);
+    % Assign y_test based on the model choice above
+    y_test = mu(NoOfSetups-99:NoOfSetups,:);
+    for c = 1:cluster_size
+        y_test(:,(c-1)*K+1:c*K) = sqrt(K)*normalize(y_test(:,(c-1)*K+1:c*K).',"norm",2).';
+    end
     
-    %% Training option:
+    %% Training options
     minibatch_size = 128;
     Training_set_ratio = 0.95;
     numEpochs = 30;
@@ -198,7 +209,7 @@ for l = 1:L
     lineLossTrain = animatedline("Color", [0.8500 0.3250 0.0980]);
     lineLossValidation = animatedline("Color", [0 0.4470 0.7410]);
 
-    ylim([0 1]);
+    ylim([0 5]);
     xlabel("Iteration");
     ylabel("Loss");
 
@@ -270,9 +281,8 @@ for l = 1:L
                 % Validation set
                 Prediction_validation = transformer.model(Xvalidation_minibatch, parameters);
                 %loss_validation = Myloss(Yvalidation_minibatch, Prediction_validation) / 100;
-                %loss_validation = huber(Yvalidation_minibatch, Prediction_validation, "DataFormat", "SSCB", 'TransitionPoint', 1);
+                loss_validation = huber(Yvalidation_minibatch, Prediction_validation, "DataFormat", "SSCB", 'TransitionPoint', 1);
                 %loss_validation = mse(change_dimension(Yvalidation_minibatch), Prediction_validation, "DataFormat", "SSCB");
-                loss_validation = Myloss1(Yvalidation_minibatch,Prediction_validation);
                 loss_validation = double(gather(extractdata(loss_validation)));
                 addpoints(lineLossValidation, iteration, loss_validation);
             
@@ -289,15 +299,14 @@ for l = 1:L
     y_predictions = transformer.model(x_test, parameters);
     test_mse = mean(reshape((y_test - y_predictions(1:K,:,:,:)).^2,1,[]));
     fprintf("Test MSE: %f",test_mse)
-    save("MR_PF_ANN_"+l+".mat","parameters");
+    save("MR_PF_CANN_"+l+".mat","parameters");
 end
 %% Supporting Functions
 
 function [loss, gradients] = modelGradients(X, Y, parameters)
 
     Prediction = transformer.model(X, parameters);
-    loss = Myloss1(Y,Prediction);
-    %loss = huber(Y, Prediction, "DataFormat", "SSCB", 'TransitionPoint', 1); % , "DataFormat", "SCB" huber change_dimension(Y)
+    loss = huber(Y, Prediction, "DataFormat", "SSCB", 'TransitionPoint', 1); % , "DataFormat", "SCB" huber change_dimension(Y)
     %loss = mse(change_dimension(Y), Prediction, "DataFormat", "SSCB");
     %loss = Myloss(change_dimension(Y), Prediction); % L1
     gradients = dlgradient(loss, parameters.Weights);
@@ -324,11 +333,6 @@ function loss = Myloss(Y, X)
     loss = sum(abs(Y - X), 'all') / size(Y, 4);
     
 end
-function loss = Myloss1(Y, X)
-
-    loss = mean(reshape((Y - X).^2,1,[]));
-    
-end
 
 function weights = initializeGlorot(sz, numOut, numIn)
 
@@ -339,6 +343,4 @@ function weights = initializeGlorot(sz, numOut, numIn)
     weights = dlarray(weights);
 
 end
-
-
 
