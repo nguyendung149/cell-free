@@ -281,8 +281,9 @@ for l = 1:cluster_size:L
                 % Validation set
                 Prediction_validation = transformer.model(Xvalidation_minibatch, parameters);
                 %loss_validation = Myloss(Yvalidation_minibatch, Prediction_validation) / 100;
-                loss_validation = huber(Yvalidation_minibatch, Prediction_validation, "DataFormat", "SSCB", 'TransitionPoint', 1);
+                %loss_validation = huber(Yvalidation_minibatch, Prediction_validation, "DataFormat", "SSCB", 'TransitionPoint', 1);
                 %loss_validation = mse(change_dimension(Yvalidation_minibatch), Prediction_validation, "DataFormat", "SSCB");
+                loss_validation = Myloss1(Yvalidation_minibatch,Prediction_validation);
                 loss_validation = double(gather(extractdata(loss_validation)));
                 addpoints(lineLossValidation, iteration, loss_validation);
             
@@ -306,9 +307,10 @@ end
 function [loss, gradients] = modelGradients(X, Y, parameters)
 
     Prediction = transformer.model(X, parameters);
-    loss = huber(Y, Prediction, "DataFormat", "SSCB", 'TransitionPoint', 1); % , "DataFormat", "SCB" huber change_dimension(Y)
+    %loss = huber(Y, Prediction, "DataFormat", "SSCB", 'TransitionPoint', 1); % , "DataFormat", "SCB" huber change_dimension(Y)
     %loss = mse(change_dimension(Y), Prediction, "DataFormat", "SSCB");
     %loss = Myloss(change_dimension(Y), Prediction); % L1
+    loss = Myloss1(Y,Prediction);
     gradients = dlgradient(loss, parameters.Weights);
 
 end
@@ -325,6 +327,11 @@ end
 function Y = change_dimension(X)
     
     Y = permute(X, [1 2 4 3]);
+    
+end
+function loss = Myloss1(Y, X)
+
+    loss = mean(reshape((Y - X).^2,1,[]));
     
 end
 
