@@ -17,7 +17,7 @@ end
 
 cluster_size = 3;
 numOfFeature = cluster_size*K;
-modelArray = [];
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%    MODEL FFNN   ##########################
 for l = 1:cluster_size:L
     
@@ -298,7 +298,7 @@ for l = 1:cluster_size:L
         end
     end
     y_predictions = transformer.model(x_test, parameters);
-    test_mse = mean(reshape((y_test - y_predictions(1:K,:,:,:)).^2,1,[]));
+    test_mse = mean(reshape((y_test - y_predictions(1:numOfFeature,:,:,:)).^2,1,[]));
     fprintf("Test MSE: %f",test_mse)
     save("RZF_sumSE_CANN_"+l+".mat","parameters");
 end

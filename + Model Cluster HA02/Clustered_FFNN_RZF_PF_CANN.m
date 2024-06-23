@@ -17,7 +17,7 @@ end
 
 cluster_size = 3;
 numOfFeature = cluster_size*K;
-modelArray = [];
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%    MODEL FFNN   ##########################
 for l = 1:cluster_size:L
      

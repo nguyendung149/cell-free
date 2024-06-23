@@ -209,7 +209,7 @@ for l = 1:cluster_size:L
     lineLossTrain = animatedline("Color", [0.8500 0.3250 0.0980]);
     lineLossValidation = animatedline("Color", [0 0.4470 0.7410]);
 
-    ylim([0 5]);
+    ylim([0 1]);
     xlabel("Iteration");
     ylabel("Loss");
 
@@ -298,7 +298,7 @@ for l = 1:cluster_size:L
         end
     end
     y_predictions = transformer.model(x_test, parameters);
-    test_mse = mean(reshape((y_test - y_predictions(1:K,:,:,:)).^2,1,[]));
+    test_mse = mean(reshape((y_test - y_predictions(1:numOfFeature,:,:,:)).^2,1,[]));
     fprintf("Test MSE: %f",test_mse)
     save("MR_PF_CANN_"+l+".mat","parameters");
 end
