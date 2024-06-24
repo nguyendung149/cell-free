@@ -2,7 +2,7 @@ clear all; close all; clc;
 %%
 format long
 % To get the same UE distribution every time you try something new
-% rng(4873256)
+rng(4873256)
 
 % Number of APs
 L = 16;
@@ -26,7 +26,7 @@ d1 = 500;
 PL = 140.72;
 
 % Select the number of setups with random UE locations
-nbrOfSetups = 10;
+nbrOfSetups = 2000;
 
 % Select the number of channel realizations per setup
 nbrOfRealizations = 100;
@@ -122,6 +122,15 @@ SE_RZF_PF_CDNN3 = zeros(K,nbrOfSetups);
 
 % HA02 allocation
 SE_MR_PF_ANN = zeros(K,nbrOfSetups);
+SE_RZF_PF_ANN = zeros(K,nbrOfSetups);
+SE_MR_sumSE_ANN = zeros(K,nbrOfSetups);
+SE_RZF_sumSE_ANN = zeros(K,nbrOfSetups);
+
+% CHAO2 allocation
+SE_MR_PF_CANN3 = zeros(K,nbrOfSetups);
+SE_MR_sumSE_CANN3 = zeros(K,nbrOfSetups);
+SE_RZF_PF_CANN3 = zeros(K,nbrOfSetups);
+SE_RZF_sumSE_CANN3 = zeros(K,nbrOfSetups);
 
 %%
 % Prepare array for pilot indices of K UEs for all setups
@@ -136,8 +145,8 @@ mu_RZF_WMMSE_ADMM = zeros(K,L,nbrOfSetups);
 % Prepare arrays for run time
 % Sum-SE maximization, WMMSE
 % ADMM implementation
-stop_MR_WMMSE_ADMM = zeros(nbrOfSetups);
-stop_RZF_WMMSE_ADMM = zeros(nbrOfSetups);
+stop_MR_WMMSE_ADMM = zeros(nbrOfSetups,1);
+stop_RZF_WMMSE_ADMM = zeros(nbrOfSetups,1);
 
 %%
 % PF maximization, WMMSE
@@ -150,8 +159,8 @@ mu_RZF_WMMSE_PF_ADMM = zeros(K,L,nbrOfSetups);
 % PF maximization, WMMSE
 % All arrays initializations
 % ADMM implementation
-stop_MR_WMMSE_PF_ADMM = zeros(nbrOfSetups);
-stop_RZF_WMMSE_PF_ADMM = zeros(nbrOfSetups);
+stop_MR_WMMSE_PF_ADMM = zeros(nbrOfSetups,1);
+stop_RZF_WMMSE_PF_ADMM = zeros(nbrOfSetups,1);
 
 %% Datasets initializations for prediction
 dataset_a_MR = zeros(L,K,nbrOfSetups);
@@ -166,7 +175,7 @@ dataset_angletoUE = zeros(K,L,nbrOfSetups);
 
 %%
 % Get AP locations and keep them fixed for all the setups
-APpositions = load('D:\DuAn\code\new_storage\APpositions.mat');
+APpositions = load('C:\Dung\APpositions.mat');
 APXpositions = real(APpositions.APpositions);
 APYpositions = imag(APpositions.APpositions);
 
@@ -191,7 +200,7 @@ for n = 1:nbrOfSetups
     UEYpositions = posXY(:,2);
     UEpositions = UEXpositions + 1i*UEYpositions;
     
-    start = tic;
+    tic;
 
     angletoUE = zeros(K,L);
 
@@ -227,8 +236,8 @@ for n = 1:nbrOfSetups
        
     end
 
-    t_end = toc - start;
-    fprintf('\n\n Time: %f \n',t_end);
+    t_end = toc;
+    fprintf('\n\n Time: %f seconds \n',t_end);
 
     
     channelGainOverNoise = channelGaindB - noiseVariancedBm;
@@ -359,26 +368,26 @@ for n = 1:nbrOfSetups
     
     % Sum-SE ADMM
     fprintf('WMMSE ADMM\n')
-    start_MR_WMMSE = tic;
+    tic;
     mu_MR_WMMSE_ADMM(:,:,n) = WMMSE_ADMM_timing(L,K,Pmax,a_MR,B_MR);
-    stop_MR_WMMSE_ADMM(n) = toc - start_MR_WMMSE;
+    stop_MR_WMMSE_ADMM(n) = toc;
     SE_MR_WMMSE_ADMM(:,n) = calculate_SINR_and_SE_DL(a_MR,B_MR,prelogFactor,mu_MR_WMMSE_ADMM(:,:,n),Pmax);
 
-    start_RZF_WMMSE = tic;
+    tic;
     mu_RZF_WMMSE_ADMM(:,:,n) = WMMSE_ADMM_timing(L, K, Pmax, a_RZF, B_RZF);
-    stop_RZF_WMMSE_ADMM(n) = toc - start_RZF_WMMSE;
+    stop_RZF_WMMSE_ADMM(n) = toc;
     SE_RZF_WMMSE_ADMM(:,n) = calculate_SINR_and_SE_DL(a_RZF,B_RZF,prelogFactor,mu_RZF_WMMSE_ADMM(:,:,n),Pmax);
 
     % Proportional Fairness ADMM
     fprintf('WMMSE PF ADMM\n')
-    start_MR_WMMSE = tic;
+    tic;
     mu_MR_WMMSE_PF_ADMM(:,:,n) = WMMSE_ADMM_timing_PF(L, K, Pmax, a_MR, B_MR);
-    stop_MR_WMMSE_PF_ADMM(n) = toc - start_MR_WMMSE;
+    stop_MR_WMMSE_PF_ADMM(n) = toc;
     SE_MR_WMMSE_PF_ADMM(:,n) = calculate_SINR_and_SE_DL(a_MR,B_MR,prelogFactor,mu_MR_WMMSE_PF_ADMM(:,:,n), Pmax);
     
-    start_RZF_WMMSE = tic;
+    tic;
     mu_RZF_WMMSE_PF_ADMM(:,:,n) = WMMSE_ADMM_timing_PF(L, K, Pmax, a_RZF, B_RZF);
-    stop_RZF_WMMSE_PF_ADMM(n) = toc - start_RZF_WMMSE;
+    stop_RZF_WMMSE_PF_ADMM(n) = toc;
     SE_RZF_WMMSE_PF_ADMM(:,n) = calculate_SINR_and_SE_DL(a_RZF,B_RZF,prelogFactor,mu_RZF_WMMSE_PF_ADMM(:,:,n), Pmax);
 
 
@@ -390,9 +399,10 @@ dataset_B_RZF = real(dataset_B_RZF);
 
 % sumSE DDNN
 model = load(".\Model\Su dung Robust Scaler\MR_sumSE_DDNN");
-muMR_DDNN_sumSE = pred_func(dataset_betas,Pmax,nbrOfSetups,model.modelArray);
+[muMR_DDNN_sumSE,MR_sumSE_DDNN_time] = pred_func(dataset_betas,Pmax,nbrOfSetups,model.modelArray);
 muMR_DDNN_sumSE_scaling = muMR_DDNN_sumSE(K+1,:,:);
 muMR_DDNN_sumSE_scaling(muMR_DDNN_sumSE_scaling > 1) = 1;
+tic;
 muMR_DDNN_sumSE_scaling = muMR_DDNN_sumSE_scaling * sqrt(Pmax);
 
 for n = 1:nbrOfSetups
@@ -404,13 +414,14 @@ for n = 1:nbrOfSetups
     end
     muMR_DDNN_sumSE(1:K,:,n) = muMR_DDNN_sumSE(1:K,:,n) .* repmat(muMR_DDNN_sumSE_scaling(:,:,n),K,1) ./ max(normMuMR_DDNN_sumSEArray);
 end
+scaling_time = toc;
 
 for n = 1:nbrOfSetups
     SE_MR_sumSE_DDNN(:,n) = calculate_SINR_and_SE_DL(dataset_a_MR(:,:,n), dataset_B_MR(:,:,:,:,n), prelogFactor, muMR_DDNN_sumSE(1:K,:,n), Pmax);
 end
 
 model = load(".\Model\Su dung Robust Scaler\RZF_sumSE_DDNN.mat");
-muRZF_DDNN_sumSE = pred_func(dataset_betas,Pmax,nbrOfSetups,model.modelArray);
+[muRZF_DDNN_sumSE,RZF_sumSE_DDNN_time] = pred_func(dataset_betas,Pmax,nbrOfSetups,model.modelArray);
 muRZF_DDNN_sumSE_scaling = muRZF_DDNN_sumSE(K+1,:,:);
 muRZF_DDNN_sumSE_scaling(muRZF_DDNN_sumSE_scaling > 1) = 1;
 muRZF_DDNN_sumSE_scaling = muRZF_DDNN_sumSE_scaling * sqrt(Pmax);
@@ -431,7 +442,7 @@ end
 
 % PF DDNN
 model = load(".\Model\Su dung Robust Scaler\MR_PF_DDNN.mat");
-muMR_DDNN_PF = pred_func(dataset_betas,Pmax,nbrOfSetups,model.modelArray);
+[muMR_DDNN_PF,MR_PF_DDNN_time] = pred_func(dataset_betas,Pmax,nbrOfSetups,model.modelArray);
 muMR_DDNN_PF_scaling = muMR_DDNN_PF(K+1,:,:);
 muMR_DDNN_PF_scaling(muMR_DDNN_PF_scaling > 1) = 1;
 muMR_DDNN_PF_scaling = muMR_DDNN_PF_scaling * sqrt(Pmax);
@@ -450,7 +461,7 @@ for n = 1:nbrOfSetups
     SE_MR_PF_DDNN(:,n) = calculate_SINR_and_SE_DL(dataset_a_MR(:,:,n), dataset_B_MR(:,:,:,:,n), prelogFactor, muMR_DDNN_PF(1:K,:,n), Pmax);
 end
 model = load(".\Model\Su dung Robust Scaler\RZF_PF_DDNN.mat");
-muRZF_DDNN_PF = pred_func(dataset_betas,Pmax,nbrOfSetups,model.modelArray);
+[muRZF_DDNN_PF,RZF_PF_DDNN_time] = pred_func(dataset_betas,Pmax,nbrOfSetups,model.modelArray);
 muRZF_DDNN_PF_scaling = muRZF_DDNN_PF(K+1,:,:);
 muRZF_DDNN_PF_scaling(muRZF_DDNN_PF_scaling > 1) = 1;
 muRZF_DDNN_PF_scaling = muRZF_DDNN_PF_scaling * sqrt(Pmax);
@@ -468,9 +479,83 @@ end
 for n = 1:nbrOfSetups
     SE_RZF_PF_DDNN(:,n) = calculate_SINR_and_SE_DL(dataset_a_RZF(:,:,n), dataset_B_RZF(:,:,:,:,n), prelogFactor, muRZF_DDNN_PF(1:K,:,n), Pmax);
 end
+% PF HA02
+modelName = "MR_PF";
+[muMR_ANN_PF,MR_PF_ANN_time] = predictions_HA02(dataset_betas,Pmax,nbrOfSetups,modelName,1);
+muMR_ANN_PF_scaling = muMR_ANN_PF(K+1,:,:);
+muMR_ANN_PF_scaling(muMR_ANN_PF_scaling > 1) = 1;
+muMR_ANN_PF_scaling = muMR_ANN_PF_scaling * sqrt(Pmax);
+for n = 1:nbrOfSetups
+    normMuMR_ANN_PFArray = [];
+    tem = reshape(muMR_ANN_PF(1:K,:,n),K,[]);
+    for t = 1:size(tem,2)
+        value = norm(tem(:,t),"fro");
+        normMuMR_ANN_PFArray = [normMuMR_ANN_PFArray value];    
+    end
+    muMR_ANN_PF(1:K,:,n) = muMR_ANN_PF(1:K,:,n) .* repmat(muMR_ANN_PF_scaling(:,:,n),K,1) ./ max(normMuMR_ANN_PFArray);
+end
+
+for n = 1:nbrOfSetups
+    SE_MR_PF_ANN(:,n) = calculate_SINR_and_SE_DL(dataset_a_MR(:,:,n), dataset_B_MR(:,:,:,:,n), prelogFactor, muMR_ANN_PF(1:K,:,n), Pmax);
+end
+modelName = "RZF_PF";
+[muRZF_ANN_PF,RZF_PF_ANN_time] = predictions_HA02(dataset_betas,Pmax,nbrOfSetups,modelName,1);
+muRZF_ANN_PF_scaling = muRZF_ANN_PF(K+1,:,:);
+muRZF_ANN_PF_scaling(muRZF_ANN_PF_scaling > 1) = 1;
+muRZF_ANN_PF_scaling = muRZF_ANN_PF_scaling * sqrt(Pmax);
+for n = 1:nbrOfSetups
+    normMuRZF_ANN_PFArray = [];
+    tem = reshape(muRZF_ANN_PF(1:K,:,n),K,[]);
+    for t = 1:size(tem,2)
+        value = norm(tem(:,t),"fro");
+        normMuRZF_ANN_PFArray = [normMuRZF_ANN_PFArray value];    
+    end
+    muRZF_ANN_PF(1:K,:,n) = muRZF_ANN_PF(1:K,:,n) .* repmat(muRZF_ANN_PF_scaling(:,:,n),K,1) ./ max(normMuRZF_ANN_PFArray);
+end
+
+for n = 1:nbrOfSetups
+    SE_RZF_PF_ANN(:,n) = calculate_SINR_and_SE_DL(dataset_a_RZF(:,:,n), dataset_B_RZF(:,:,:,:,n), prelogFactor, muRZF_ANN_PF(1:K,:,n), Pmax);
+end
+% sumSE ANN
+modelName = "MR_sumSE";
+[muMR_ANN_sumSE,MR_sumSE_ANN_time] = predictions_HA02(dataset_betas,Pmax,nbrOfSetups,modelName,1);
+muMR_ANN_sumSE_scaling = muMR_ANN_sumSE(K+1,:,:);
+muMR_ANN_sumSE_scaling(muMR_ANN_sumSE_scaling > 1) = 1;
+muMR_ANN_sumSE_scaling = muMR_ANN_sumSE_scaling * sqrt(Pmax);
+for n = 1:nbrOfSetups
+    normMuMR_ANN_sumSEArray = [];
+    tem = reshape(muMR_ANN_sumSE(1:K,:,n),K,[]);
+    for t = 1:size(tem,2)
+        value = norm(tem(:,t),"fro");
+        normMuMR_ANN_sumSEArray = [normMuMR_ANN_sumSEArray value];    
+    end
+    muMR_ANN_sumSE(1:K,:,n) = muMR_ANN_sumSE(1:K,:,n) .* repmat(muMR_ANN_sumSE_scaling(:,:,n),K,1) ./ max(normMuMR_ANN_sumSEArray);
+end
+
+for n = 1:nbrOfSetups
+    SE_MR_sumSE_ANN(:,n) = calculate_SINR_and_SE_DL(dataset_a_MR(:,:,n), dataset_B_MR(:,:,:,:,n), prelogFactor, muMR_ANN_sumSE(1:K,:,n), Pmax);
+end
+modelName = "RZF_sumSE";
+[muRZF_ANN_sumSE,RZF_sumSE_ANN_time] = predictions_HA02(dataset_betas,Pmax,nbrOfSetups,modelName,1);
+muRZF_ANN_sumSE_scaling = muRZF_ANN_sumSE(K+1,:,:);
+muRZF_ANN_sumSE_scaling(muRZF_ANN_sumSE_scaling > 1) = 1;
+muRZF_ANN_sumSE_scaling = muRZF_ANN_sumSE_scaling  * sqrt(Pmax);
+for n = 1:nbrOfSetups
+    normMuRZF_ANN_sumSEArray = [];
+    tem = reshape(muRZF_ANN_sumSE(1:K,:,n),K,[]);
+    for t = 1:size(tem,2)
+        value = norm(tem(:,t),"fro");
+        normMuRZF_ANN_sumSEArray = [normMuRZF_ANN_sumSEArray value];    
+    end
+    muRZF_ANN_sumSE(1:K,:,n) = muRZF_ANN_sumSE(1:K,:,n) .* repmat(muRZF_ANN_sumSE_scaling(:,:,n),K,1) ./ max(normMuRZF_ANN_sumSEArray);
+end
+
+for n = 1:nbrOfSetups
+    SE_RZF_sumSE_ANN(:,n) = calculate_SINR_and_SE_DL(dataset_a_RZF(:,:,n), dataset_B_RZF(:,:,:,:,n), prelogFactor, muRZF_ANN_sumSE(1:K,:,n), Pmax);
+end
 % sumSE CDNN
 model = load(".\Model\CDNN\MR_SE_CDNN.mat");
-muMR_CDNN_sumSE = predictions_CDNN(dataset_betas,Pmax,nbrOfSetups,model.modelArray,cluster_size);
+[muMR_CDNN_sumSE,MR_sumSE_CDNN_time] = predictions_CDNN(dataset_betas,Pmax,nbrOfSetups,model.modelArray,cluster_size);
 muMR_CDNN_sumSE_scaling = muMR_CDNN_sumSE(K+1,:,:);
 muMR_CDNN_sumSE_scaling(muMR_CDNN_sumSE_scaling > 1) = 1;
 muMR_CDNN_sumSE_scaling = muMR_CDNN_sumSE_scaling * sqrt(Pmax);
@@ -488,7 +573,7 @@ for n = 1:nbrOfSetups
     SE_MR_sumSE_CDNN3(:,n) = calculate_SINR_and_SE_DL(dataset_a_MR(:,:,n), dataset_B_MR(:,:,:,:,n), prelogFactor, muMR_CDNN_sumSE(1:K,:,n), Pmax);
 end
 model = load(".\Model\CDNN\RZF_SE_CDNN.mat");
-muRZF_CDNN_sumSE = predictions_CDNN(dataset_betas,Pmax,nbrOfSetups,model.modelArray,cluster_size);
+[muRZF_CDNN_sumSE,RZF_sumSE_CDNN_time] = predictions_CDNN(dataset_betas,Pmax,nbrOfSetups,model.modelArray,cluster_size);
 muRZF_CDNN_sumSE_scaling = muRZF_CDNN_sumSE(K+1,:,:);
 muRZF_CDNN_sumSE_scaling(muRZF_CDNN_sumSE_scaling > 1) = 1;
 muRZF_CDNN_sumSE_scaling = muRZF_CDNN_sumSE_scaling * sqrt(Pmax);
@@ -508,7 +593,7 @@ end
 
 % PF CDNN
 model = load(".\Model\CDNN\MR_PF_CDNN.mat");
-muMR_CDNN_PF = predictions_CDNN(dataset_betas,Pmax,nbrOfSetups,model.modelArray,cluster_size);
+[muMR_CDNN_PF,MR_PF_CDNN_time] = predictions_CDNN(dataset_betas,Pmax,nbrOfSetups,model.modelArray,cluster_size);
 muMR_CDNN_PF_scaling = muMR_CDNN_PF(K+1,:,:);
 muMR_CDNN_PF_scaling(muMR_CDNN_PF_scaling > 1) = 1;
 muMR_CDNN_PF_scaling = muMR_CDNN_PF_scaling * sqrt(Pmax);
@@ -527,7 +612,7 @@ for n = 1:nbrOfSetups
 end
 
 model = load(".\Model\CDNN\RZF_PF_CDNN.mat");
-muRZF_CDNN_PF = predictions_CDNN(dataset_betas,Pmax,nbrOfSetups,model.modelArray,cluster_size);
+[muRZF_CDNN_PF,RZF_PF_CDNN_time] = predictions_CDNN(dataset_betas,Pmax,nbrOfSetups,model.modelArray,cluster_size);
 muRZF_CDNN_PF_scaling = muRZF_CDNN_PF(K+1,:,:);
 muRZF_CDNN_PF_scaling(muRZF_CDNN_PF_scaling > 1) = 1;
 muRZF_CDNN_PF_scaling = muRZF_CDNN_PF_scaling * sqrt(Pmax);
@@ -544,27 +629,85 @@ end
 for n = 1:nbrOfSetups
     SE_RZF_PF_CDNN3(:,n) = calculate_SINR_and_SE_DL(dataset_a_RZF(:,:,n), dataset_B_RZF(:,:,:,:,n), prelogFactor, muRZF_CDNN_PF(1:K,:,n), Pmax);
 end
-% PF HA02
+
+% PF CANN
 modelName = "MR_PF";
-muMR_ANN_PF = predictions_HA02(dataset_betas,Pmax,nbrOfSetups,modelName);
-muMR_ANN_PF_scaling = muMR_ANN_PF(K+1,:,:);
-muMR_ANN_PF_scaling(muMR_ANN_PF_scaling > 1) = 1;
-muMR_ANN_PF_scaling = muMR_ANN_PF_scaling * sqrt(Pmax);
+[muMR_CANN_PF,MR_PF_CANN_time] = predictions_CHA02(dataset_betas,Pmax,nbrOfSetups,modelName,cluster_size);
+muMR_CANN_PF_scaling = muMR_CANN_PF(K+1,:,:);
+muMR_CANN_PF_scaling(muMR_CANN_PF_scaling > 1) = 1;
+muMR_CANN_PF_scaling = muMR_CANN_PF_scaling * sqrt(Pmax);
 for n = 1:nbrOfSetups
-    normMuMR_ANN_PFArray = [];
-    tem = reshape(muMR_ANN_PF(1:K,:,n),K,[]);
+    normMuMR_CANN_PFArray = [];
+    tem = reshape(muMR_CANN_PF(1:K,:,n),K,[]);
     for t = 1:size(tem,2)
         value = norm(tem(:,t),"fro");
-        normMuMR_ANN_PFArray = [normMuMR_ANN_PFArray value];    
+        normMuMR_CANN_PFArray = [normMuMR_CANN_PFArray value];    
     end
-    muMR_ANN_PF(1:K,:,n) = muMR_ANN_PF(1:K,:,n) .* repmat(muMR_ANN_PF_scaling(:,:,n),K,1) ./ max(normMuMR_ANN_PFArray);
+    muMR_CANN_PF(1:K,:,n) = muMR_CANN_PF(1:K,:,n) .* repmat(muMR_CANN_PF_scaling(:,:,n),K,1) ./ max(normMuMR_CANN_PFArray);
 end
 
 for n = 1:nbrOfSetups
-    SE_MR_PF_ANN(:,n) = calculate_SINR_and_SE_DL(dataset_a_MR(:,:,n), dataset_B_MR(:,:,:,:,n), prelogFactor, muMR_ANN_PF(1:K,:,n), Pmax);
+    SE_MR_PF_CANN3(:,n) = calculate_SINR_and_SE_DL(dataset_a_MR(:,:,n), dataset_B_MR(:,:,:,:,n), prelogFactor, muMR_CANN_PF(1:K,:,n), Pmax);
+end
+
+modelName = "RZF_PF";
+[muRZF_CANN_PF,RZF_PF_CANN_time] = predictions_CHA02(dataset_betas,Pmax,nbrOfSetups,modelName,cluster_size);
+muRZF_CANN_PF_scaling = muRZF_CANN_PF(K+1,:,:);
+muRZF_CANN_PF_scaling(muRZF_CANN_PF_scaling > 1) = 1;
+muRZF_CANN_PF_scaling = muRZF_CANN_PF_scaling * sqrt(Pmax);
+for n = 1:nbrOfSetups
+    normMuRZF_CANN_PFArray = [];
+    tem = reshape(muRZF_CANN_PF(1:K,:,n),K,[]);
+    for t = 1:size(tem,2)
+        value = norm(tem(:,t),"fro");
+        normMuRZF_CANN_PFArray = [normMuRZF_CANN_PFArray value];    
+    end
+    muRZF_CANN_PF(1:K,:,n) = muRZF_CANN_PF(1:K,:,n) .* repmat(muRZF_CANN_PF_scaling(:,:,n),K,1) ./ max(normMuRZF_CANN_PFArray);
+end
+
+for n = 1:nbrOfSetups
+    SE_RZF_PF_CANN3(:,n) = calculate_SINR_and_SE_DL(dataset_a_RZF(:,:,n), dataset_B_RZF(:,:,:,:,n), prelogFactor, muRZF_CANN_PF(1:K,:,n), Pmax);
 end
 
 
+% sumSE CANN
+modelName = "MR_sumSE";
+[muMR_CANN_sumSE,MR_sumSE_CANN_time] = predictions_CHA02(dataset_betas,Pmax,nbrOfSetups,modelName,cluster_size);
+muMR_CANN_sumSE_scaling = muMR_CANN_sumSE(K+1,:,:);
+muMR_CANN_sumSE_scaling(muMR_CANN_sumSE_scaling > 1) = 1;
+muMR_CANN_sumSE_scaling = muMR_CANN_sumSE_scaling * sqrt(Pmax);
+for n = 1:nbrOfSetups
+    normMuMR_CANN_sumSEArray = [];
+    tem = reshape(muMR_CANN_sumSE(1:K,:,n),K,[]);
+    for t = 1:size(tem,2)
+        value = norm(tem(:,t),"fro");
+        normMuMR_CANN_sumSEArray = [normMuMR_CANN_sumSEArray value];    
+    end
+    muMR_CANN_sumSE(1:K,:,n) = muMR_CANN_sumSE(1:K,:,n) .* repmat(muMR_CANN_sumSE_scaling(:,:,n),K,1) ./ max(normMuMR_CANN_sumSEArray);
+end
+
+for n = 1:nbrOfSetups
+    SE_MR_sumSE_CANN3(:,n) = calculate_SINR_and_SE_DL(dataset_a_MR(:,:,n), dataset_B_MR(:,:,:,:,n), prelogFactor, muMR_CANN_sumSE(1:K,:,n), Pmax);
+end
+
+modelName = "RZF_sumSE";
+[muRZF_CANN_sumSE,RZF_sumSE_CANN_time] = predictions_CHA02(dataset_betas,Pmax,nbrOfSetups,modelName,cluster_size);
+muRZF_CANN_sumSE_scaling = muRZF_CANN_sumSE(K+1,:,:);
+muRZF_CANN_sumSE_scaling(muRZF_CANN_sumSE_scaling > 1) = 1;
+muRZF_CANN_sumSE_scaling = muRZF_CANN_sumSE_scaling * sqrt(Pmax);
+for n = 1:nbrOfSetups
+    normMuRZF_CANN_sumSEArray = [];
+    tem = reshape(muRZF_CANN_sumSE(1:K,:,n),K,[]);
+    for t = 1:size(tem,2)
+        value = norm(tem(:,t),"fro");
+        normMuRZF_CANN_sumSEArray = [normMuRZF_CANN_sumSEArray value];    
+    end
+    muRZF_CANN_sumSE(1:K,:,n) = muRZF_CANN_sumSE(1:K,:,n) .* repmat(muRZF_CANN_sumSE_scaling(:,:,n),K,1) ./ max(normMuRZF_CANN_sumSEArray);
+end
+
+for n = 1:nbrOfSetups
+    SE_RZF_sumSE_CANN3(:,n) = calculate_SINR_and_SE_DL(dataset_a_RZF(:,:,n), dataset_B_RZF(:,:,:,:,n), prelogFactor, muRZF_CANN_sumSE(1:K,:,n), Pmax);
+end
 
 % Sort the SE values for CDF plots
 sorted_SE_MR_Equal = sorted_SE(SE_MR_equal);
@@ -588,7 +731,14 @@ sorted_SE_MR_PF_CDNN3 = sorted_SE(SE_MR_PF_CDNN3);
 sorted_SE_RZF_PF_CDNN3 = sorted_SE(SE_RZF_PF_CDNN3);
 
 sorted_SE_MR_PF_ANN = sorted_SE(SE_MR_PF_ANN);
+sorted_SE_RZF_PF_ANN = sorted_SE(SE_RZF_PF_ANN);
+sorted_SE_MR_sumSE_ANN = sorted_SE(SE_MR_sumSE_ANN);
+sorted_SE_RZF_sumSE_ANN = sorted_SE(SE_RZF_sumSE_ANN);
 
+sorted_SE_MR_PF_CANN3 = sorted_SE(SE_MR_PF_CANN3);
+sorted_SE_RZF_PF_CANN3 = sorted_SE(SE_RZF_PF_CANN3);
+sorted_SE_MR_sumSE_CANN3 = sorted_SE(SE_MR_sumSE_CANN3);
+sorted_SE_RZF_sumSE_CANN3 = sorted_SE(SE_RZF_sumSE_CANN3);
 
 % Calculations for sum-rate plots
 sum_SE_MR_Equal = sum(SE_MR_equal);
@@ -632,16 +782,25 @@ sum_SE_RZF_PF_CDNN3 = sum(SE_RZF_PF_CDNN3);
 sum_SE_RZF_PF_CDNN3 = sort(sum_SE_RZF_PF_CDNN3);
 
 
-% sum_SE_MR_sumSE_ANN = sum(SE_MR_sumSE_ANN);
-% sum_SE_MR_sumSE_ANN = sort(sum_SE_MR_sumSE_ANN);
-% sum_SE_RZF_sumSE_ANN = sum(SE_RZF_sumSE_ANN);
-% sum_SE_RZF_sumSE_ANN = sort(sum_SE_RZF_sumSE_ANN);
-% 
-% 
+sum_SE_MR_sumSE_ANN = sum(SE_MR_sumSE_ANN);
+sum_SE_MR_sumSE_ANN = sort(sum_SE_MR_sumSE_ANN);
+sum_SE_RZF_sumSE_ANN = sum(SE_RZF_sumSE_ANN);
+sum_SE_RZF_sumSE_ANN = sort(sum_SE_RZF_sumSE_ANN);
+
 sum_SE_MR_PF_ANN = sum(SE_MR_PF_ANN);
 sum_SE_MR_PF_ANN = sort(sum_SE_MR_PF_ANN);
-% sum_SE_RZF_PF_ANN = sum(SE_RZF_PF_ANN);
-% sum_SE_RZF_PF_ANN = sort(sum_SE_RZF_PF_ANN);
+sum_SE_RZF_PF_ANN = sum(SE_RZF_PF_ANN);
+sum_SE_RZF_PF_ANN = sort(sum_SE_RZF_PF_ANN);
+
+sum_SE_MR_PF_CANN3 = sum(SE_MR_PF_CANN3);
+sum_SE_MR_PF_CANN3 = sort(sum_SE_MR_PF_CANN3);
+sum_SE_RZF_PF_CANN3 = sum(SE_RZF_PF_CANN3);
+sum_SE_RZF_PF_CANN3 = sort(sum_SE_RZF_PF_CANN3);
+
+sum_SE_MR_sumSE_CANN3 = sum(SE_MR_sumSE_CANN3);
+sum_SE_MR_sumSE_CANN3 = sort(sum_SE_MR_sumSE_CANN3);
+sum_SE_RZF_sumSE_CANN3 = sum(SE_RZF_sumSE_CANN3);
+sum_SE_RZF_sumSE_CANN3 = sort(sum_SE_RZF_sumSE_CANN3);
 
 
 %% Plot
@@ -655,12 +814,12 @@ plot(sorted_SE_MR_Equal,  Yvals, color="red",  linewidth=2)
 plot(sorted_SE_MR_Giovanni19, Yvals, '-.', color="green",  linewidth=2)
 plot(sorted_SE_MR_WMMSE_ADMM, Yvals, color="blue", linewidth=2)
 plot(sorted_SE_MR_sumSE_DDNN, Yvals, color="cyan", linewidth=2)
-% plot(sorted_SE_MR_sumSE_ANN, Yvals, color="magenta",  linewidth=2)
+plot(sorted_SE_MR_sumSE_ANN, Yvals, color="magenta",  linewidth=2)
 plot(sorted_SE_MR_sumSE_CDNN3,Yvals,color="yellow",LineWidth=2)
-
+plot(sorted_SE_MR_sumSE_CANN3,Yvals,color="black",LineWidth=2)
 
 legend('Equal power MR','[12] MR','SE MR WMMSE ADMM', 'SE MR sumSE DDNN',...
-    'SE MR sumSE CDNN3')
+    'SE MR sumSE ANN','SE MR sumSE CDNN3','SE MR sumSE CANN3')
 xlim([0.0, 5])
 ylim([0, 1])
 title('Sorted Spectral Efficiency')
@@ -676,9 +835,10 @@ plot(sorted_SE_MR_WMMSE_PF_ADMM, Yvals, color="blue", linewidth=2)
 plot(sorted_SE_MR_PF_DDNN, Yvals, color="cyan", linewidth=2) 
 plot(sorted_SE_MR_PF_ANN, Yvals, color="magenta",linewidth=2)
 plot(sorted_SE_MR_PF_CDNN3,Yvals,color="yellow",LineWidth=2)
+plot(sorted_SE_MR_PF_CANN3,Yvals,color="black",LineWidth=2)
 
 legend('Equal power MR','[12] MR','SE MR WMMSE PF ADMM','SE MR PF DDNN',...
-    'SE MR PF ANN','SE MR PF CDNN3')
+    'SE MR PF ANN','SE MR PF CDNN3','SE MR PF CANN3')
 xlim([0.0, 5])
 ylim([0, 1])
 title('Sorted Spectral Efficiency')
@@ -692,11 +852,12 @@ plot(sorted_SE_RZF_Equal,  Yvals, color="red",  linewidth=2)
 plot(sorted_SE_RZF_Giovanni19, Yvals, '-.', color="green",  linewidth=2)
 plot(sorted_SE_RZF_WMMSE_ADMM, Yvals, color="blue", linewidth=2)
 plot(sorted_SE_RZF_sumSE_DDNN, Yvals, color="cyan", linewidth=2)
-% plot(sorted_SE_RZF_sumSE_ANN, Yvals, color="magenta", linewidth=2)
+plot(sorted_SE_RZF_sumSE_ANN, Yvals, color="magenta", linewidth=2)
 plot(sorted_SE_RZF_sumSE_CDNN3,Yvals,color="yellow",LineWidth=2)
+plot(sorted_SE_RZF_sumSE_CANN3,Yvals,color="black",LineWidth=2)
 
 legend('Equal power RZF','[12] RZF','SE RZF WMMSE ADMM','SE RZF sumSE DDNN',...
-    'SE RZF sumSE CDNN3');
+    'SE RZF sumSE ANN','SE RZF sumSE CDNN3','SE RZF sumSE CANN3');
 xlim([0.0, 5])
 ylim([0, 1])
 title('Sorted Spectral Efficiency')
@@ -710,11 +871,12 @@ plot(sorted_SE_RZF_Equal,  Yvals, color="red",  linewidth=2)
 plot(sorted_SE_RZF_Giovanni19, Yvals, '-.', color="green",  linewidth=2)
 plot(sorted_SE_RZF_WMMSE_PF_ADMM, Yvals, color="blue", linewidth=2) 
 plot(sorted_SE_RZF_PF_DDNN, Yvals, color="cyan", linewidth=2) 
-% plot(sorted_SE_RZF_PF_ANN, Yvals, color="magenta", linewidth=2)
+plot(sorted_SE_RZF_PF_ANN, Yvals, color="magenta", linewidth=2)
 plot(sorted_SE_RZF_PF_CDNN3, Yvals, color="yellow", linewidth=2) 
+plot(sorted_SE_RZF_PF_CANN3, Yvals, color="black", linewidth=2)
 
 legend('Equal power RZF','[12] RZF','SE RZF WMMSE PF ADMM','SE RZF PF DDNN',...
-    'SE RZF PF CDNN3')
+    'SE RZF PF ANN','SE RZF PF CDNN3','SE RZF PF CANN3')
 xlim([0.0, 5])
 ylim([0, 1])
 title('Sorted Spectral Efficiency')
@@ -728,11 +890,12 @@ plot(sum_SE_MR_Equal,  Yvals_sum, color="red",  linewidth=2)
 plot(sum_SE_MR_Giovanni19, Yvals_sum, '-.', color="green",  linewidth=2)
 plot(sum_SE_MR_WMMSE_ADMM, Yvals_sum, color="blue", linewidth=2)
 plot(sum_SE_MR_sumSE_DDNN, Yvals_sum, color="cyan", linewidth=2) 
-% plot(sum_SE_MR_sumSE_ANN, Yvals_sum, color="magenta", linewidth=2)
+plot(sum_SE_MR_sumSE_ANN, Yvals_sum, color="magenta", linewidth=2)
 plot(sum_SE_MR_sumSE_CDNN3,Yvals_sum,color="yellow",LineWidth=2)
+plot(sum_SE_MR_sumSE_CANN3,Yvals_sum,color="black",LineWidth=2)
 
 legend('Equal power MR','[12] MR','SE MR WMMSE ADMM',...
-    'SE MR sumSE DDNN','SE MR sumSE CDNN3')
+    'SE MR sumSE DDNN','SE MR sumSE ANN','SE MR sumSE CDNN3','SE MR sumSE CANN3')
 %xlim([0.0, 5])
 ylim([0, 1])
 title('Sum Spectral Efficiency')
@@ -748,8 +911,10 @@ plot(sum_SE_MR_WMMSE_PF_ADMM, Yvals_sum, color="blue", linewidth=2)
 plot(sum_SE_MR_PF_DDNN, Yvals_sum, color="cyan", linewidth=2) 
 plot(sum_SE_MR_PF_ANN,Yvals_sum,color="magenta",linewidth=2)
 plot(sum_SE_MR_PF_CDNN3, Yvals_sum, color="yellow", linewidth=2) 
+plot(sum_SE_MR_PF_CANN3,Yvals_sum,color="black",LineWidth=2)
+
 legend('Equal power MR','[12] MR','SE MR WMMSE PF ADMM','SE MR PF DDNN',...
-    'SE MR PF ANN','SE MR PF CDNN3')
+    'SE MR PF ANN','SE MR PF CDNN3','SE MR PF CANN3')
 %xlim([0.0, 5])
 ylim([0, 1])
 title('Sum Spectral Efficiency')
@@ -763,11 +928,12 @@ plot(sum_SE_RZF_Equal,  Yvals_sum, color="red",  linewidth=2)
 plot(sum_SE_RZF_Giovanni19, Yvals_sum, '-.', color="green",  linewidth=2)
 plot(sum_SE_RZF_WMMSE_ADMM, Yvals_sum, color="blue", linewidth=2) 
 plot(sum_SE_RZF_sumSE_DDNN, Yvals_sum, color="cyan", linewidth=2) 
-%plot(sum_SE_RZF_sumSE_ANN, Yvals_sum, color="magenta", linewidth=2)
+plot(sum_SE_RZF_sumSE_ANN, Yvals_sum, color="magenta", linewidth=2)
 plot(sum_SE_RZF_sumSE_CDNN3,Yvals_sum,color="yellow",LineWidth=2)
+plot(sum_SE_RZF_sumSE_CANN3,Yvals_sum,color="black",LineWidth=2)
 
 legend('Equal power RZF','[12] RZF','SE RZF WMMSE ADMM','SE RZF sumSE DDNN',...
-    'SE RZF sumSE CDNN3')
+    'SE RZF sumSE ANN','SE RZF sumSE CDNN3','SE RZF sumSE CANN3')
 %xlim([0.0, 5])
 ylim([0, 1])
 title('Sum Spectral Efficiency')
@@ -781,13 +947,50 @@ plot(sum_SE_RZF_Equal,  Yvals_sum, color="red",  linewidth=2)
 plot(sum_SE_RZF_Giovanni19, Yvals_sum, '-.', color="green",  linewidth=2)
 plot(sum_SE_RZF_WMMSE_PF_ADMM, Yvals_sum, color="blue", linewidth=2)
 plot(sum_SE_RZF_PF_DDNN, Yvals_sum, color="cyan", linewidth=2) 
-%plot(sum_SE_RZF_PF_ANN, Yvals_sum, color="magenta",linewidth=2)
+plot(sum_SE_RZF_PF_ANN, Yvals_sum, color="magenta",linewidth=2)
 plot(sum_SE_RZF_PF_CDNN3, Yvals_sum, color="yellow", linewidth=2) 
+plot(sum_SE_RZF_PF_CANN3, Yvals_sum, color="black", linewidth=2) 
 
 legend('Equal power RZF','[12] RZF','SE RZF WMMSE PF ADMM',...
-    'SE RZF PF DDNN','SE RZF PF CDNN3')
+    'SE RZF PF DDNN','SE RZF PF ANN','SE RZF PF CDNN3','SE RZF PF CANN3')
 %xlim([0.0, 5])
 ylim([0, 1])
 title('Sum Spectral Efficiency')
 xlabel('Total SE [bit/s/Hz]')
 ylabel('CDF')
+
+%% Time
+fprintf('\n Time taken for WMMSE ADMM (MR): %f', mean(stop_MR_WMMSE_ADMM) )
+fprintf('\n Time taken for WMMSE PF ADMM (MR): %f ', mean(stop_MR_WMMSE_PF_ADMM) )
+
+fprintf('\n Time taken for WMMSE ADMM (RZF): %f ', mean(stop_RZF_WMMSE_ADMM) )
+fprintf('\n Time taken for WMMSE PF ADMM (RZF): %f', mean(stop_RZF_WMMSE_PF_ADMM) )
+
+fprintf("\n")
+
+% The comutation time is calculated by averaging over 2000 setups
+fprintf('\n Time taken for sumSE DDNN (MR): %f ',(MR_sumSE_DDNN_time*L+scaling_time)/nbrOfSetups)
+fprintf('\n Time taken for sumSE DDNN (RZF): %f',  (RZF_sumSE_DDNN_time*L+scaling_time)/nbrOfSetups)
+fprintf('\n Time taken for PF DDNN (MR): %f',  (MR_PF_DDNN_time*L+scaling_time)/nbrOfSetups)
+fprintf('\n Time taken for PF DDNN (RZF): %f',  (RZF_PF_DDNN_time*L+scaling_time)/nbrOfSetups)
+
+fprintf("\n")
+
+fprintf('\n Time taken for sumSE CDNN (MR): %f',  (MR_sumSE_CDNN_time*L+scaling_time)/(cluster_size*nbrOfSetups))
+fprintf('\n Time taken for sumSE CDNN (RZF): %f',  (RZF_sumSE_CDNN_time*L+scaling_time)/(cluster_size*nbrOfSetups))
+fprintf('\n Time taken for PF CDNN (MR): %f',  (MR_PF_CDNN_time*L+scaling_time)/(cluster_size*nbrOfSetups))
+fprintf('\n Time taken for PF CDNN (RZF): %f',  (RZF_PF_CDNN_time*L+scaling_time)/(cluster_size*nbrOfSetups))
+
+fprintf("\n")
+
+fprintf('\n Time taken for sumSE ANN (MR): %f ',(MR_sumSE_ANN_time*L+scaling_time)/nbrOfSetups)
+fprintf('\n Time taken for sumSE ANN (RZF): %f',  (RZF_sumSE_ANN_time*L+scaling_time)/nbrOfSetups)
+fprintf('\n Time taken for PF ANN (MR): %f',  (MR_PF_ANN_time*L+scaling_time)/nbrOfSetups)
+fprintf('\n Time taken for PF ANN (RZF): %f',  (RZF_PF_ANN_time*L+scaling_time)/nbrOfSetups)
+
+fprintf("\n")
+
+fprintf('\n Time taken for sumSE CANN (MR): %f',  (MR_sumSE_CANN_time*L+scaling_time)/(cluster_size*nbrOfSetups))
+fprintf('\n Time taken for sumSE CANN (RZF): %f',  (RZF_sumSE_CANN_time*L+scaling_time)/(cluster_size*nbrOfSetups))
+fprintf('\n Time taken for PF CANN (MR): %f',  (MR_PF_CANN_time*L+scaling_time)/(cluster_size*nbrOfSetups))
+fprintf('\n Time taken for PF CANN (RZF): %f',  (RZF_PF_CANN_time*L+scaling_time)/(cluster_size*nbrOfSetups))

@@ -1,4 +1,4 @@
-function mu = predictions_CHA02(betas_DNN,Pmax,NoOfSetup,modelName,cluster_size)
+function [mu,stop_time] = predictions_CHA02(betas_DNN,Pmax,NoOfSetup,modelName,cluster_size)
     K = size(betas_DNN,1);
     L = size(betas_DNN,2);
     nbrOfSetups = size(betas_DNN,3);
@@ -12,13 +12,14 @@ function mu = predictions_CHA02(betas_DNN,Pmax,NoOfSetup,modelName,cluster_size)
         end
         if strcmpi(modelName,"MR_PF")
             model = load(".\Model\CANN_MSE\MR_PF_CANN\MR_PF_CANN_"+l+".mat");
-        % elseif strcmpi(modelName,"RZF_PF")
-        %     model = load(".\Model\HA02_MSE\RZF_PF_ANN\RZF_PF_ANN_"+index+".mat");
-        % elseif strcmpi(modelName,"MR_sumSE")
-        %     model = load(".\Model\HA02_MSE\MR_sumSE_ANN\MR_sumSE_ANN_"+index+".mat");
-        % else
-        %     model = load(".\Model\HA02_MSE\RZF_sumSE_ANN\RZF_sumSE_ANN_"+index+".mat");
+        elseif strcmpi(modelName,"RZF_PF")
+            model = load(".\Model\CANN_MSE\RZF_PF_CANN\RZF_PF_CANN_"+l+".mat");
+        elseif strcmpi(modelName,"MR_sumSE")
+            model = load(".\Model\CANN_MSE\MR_sumSE_CANN\MR_sumSE_CANN_"+l+".mat");
+        else
+            model = load(".\Model\CANN_MSE\RZF_sumSE_CANN\RZF_sumSE_CANN_"+l+".mat");
         end
+        tic;
         betas = zeros(NoOfSetup,cluster_size*K);
         for c = 1:cluster_size
             betas(:,(c-1)*K+1:c*K) = reshape(betas_DNN(:,l+c-1,:),K,[]).';
@@ -40,5 +41,6 @@ function mu = predictions_CHA02(betas_DNN,Pmax,NoOfSetup,modelName,cluster_size)
             index = [(c-1)*K+1:c*K cluster_size*K + c];
             mu(:,l+c-1,:) = DNNoutput(index,:);
         end
+        stop_time = toc;
     end
 end

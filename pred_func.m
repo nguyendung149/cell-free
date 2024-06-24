@@ -1,4 +1,4 @@
-function mu = pred_func(betas_DNN,Pmax,NoOfSetups,modelname)
+function [mu,stop_time] = pred_func(betas_DNN,Pmax,NoOfSetups,modelname)
     
     K = size(betas_DNN,1);
     L = size(betas_DNN,2);
@@ -7,6 +7,7 @@ function mu = pred_func(betas_DNN,Pmax,NoOfSetups,modelname)
     mu = zeros(K+1,L,nbrOfSetups);
 
     for l = 1:L
+        tic;
         betas = reshape(betas_DNN(:,l,:),K,[]).' * 1000;
 
         v = 0.6;
@@ -18,7 +19,8 @@ function mu = pred_func(betas_DNN,Pmax,NoOfSetups,modelname)
         betas = robustScaler(betas,0,1);
 
         mu(:,l,:) = predict(modelname(l),betas).';
-
+        
+        stop_time = toc;
 
     end
 
